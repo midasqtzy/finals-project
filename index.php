@@ -104,7 +104,7 @@ if (!empty($allResult)) {
                         <button type="submit" class="btn btn-primary">Search</button>
                     </form>
                     <button type="button" class="btn btn-primary add-record-btn" data-bs-toggle="modal" data-bs-target="#addModal">
-                        <i class="bi bi-plus-lg"></i> Add Clearance Record
+                        <i class="bi bi-plus-lg"></i> Register Student
                     </button>
                 </div>
             </div>

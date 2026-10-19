@@ -147,6 +147,52 @@ class User {
         }
     }
 
+    public function registerStudent($studentId, $name, $course, $yearSection, $username, $password) {
+        $nameParts = preg_split('/\s+/', trim($name), 2);
+        $firstName = $nameParts[0];
+        $lastName = $nameParts[1] ?? 'N/A';
+        $email = $username . '@students.local';
+
+        try {
+            $this->conn->beginTransaction();
+
+            $existingUser = $this->conn->prepare("SELECT user_id FROM users_table WHERE username = :username LIMIT 1");
+            $existingUser->execute([':username' => $username]);
+            if ($existingUser->fetchColumn() !== false) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $userStmt = $this->conn->prepare("INSERT INTO users_table (username, password, role)
+                                              VALUES (:username, :password, 'member')");
+            $userStmt->execute([
+                ':username' => $username,
+                ':password' => password_hash($password, PASSWORD_DEFAULT)
+            ]);
+
+            $memberStmt = $this->conn->prepare("INSERT INTO members
+                      (member_id, first_name, last_name, email, address, gender, course, year_section, status, pending_requirements, remarks, user_id)
+                      VALUES (:member_id, :first_name, :last_name, :email, 'Not provided', 'Not specified', :course, :year_section, 'Pending', '', '', :user_id)");
+            $memberStmt->execute([
+                ':member_id' => $studentId,
+                ':first_name' => $firstName,
+                ':last_name' => $lastName,
+                ':email' => $email,
+                ':course' => $course,
+                ':year_section' => $yearSection,
+                ':user_id' => $this->conn->lastInsertId()
+            ]);
+
+            $this->conn->commit();
+            return true;
+        } catch (PDOException $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            return false;
+        }
+    }
+
     public function findByUsername($username) {
         $stmt = $this->conn->prepare("SELECT u.user_id, u.username, u.password, u.role,
                              m.member_id, m.first_name, m.last_name
